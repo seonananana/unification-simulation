@@ -53,11 +53,7 @@ st.header("5. 통일 시나리오 기반 물류비용 절감 예측")
 before_path = "unification-simulation/data/before_unification.xlsx"
 after_path = "unification-simulation/data/after_unification.xlsx"
 nk_path = "unification-simulation/data/nk_station_map.csv"
-# 경로 확인
-st.sidebar.subheader("🔍 경로 확인")
-st.sidebar.write("통일전 파일 존재:", os.path.exists(before_path))
-st.sidebar.write("통일후 파일 존재:", os.path.exists(after_path))
-st.sidebar.write("북한역 파일 존재:", os.path.exists(nk_path))
+
 
 try:
     # 물류 비교 실행
