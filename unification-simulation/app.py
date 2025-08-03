@@ -80,11 +80,11 @@ try:
     forecast_df = pd.DataFrame({"예측 절감액": forecast.values}, index=forecast_years_range)
 
     # 그래프
-    st.subheader("📈 예측 결과 시각화")
+    st.subheader("예측 결과 시각화")
     st.line_chart(pd.concat([df["절감액"], forecast_df["예측 절감액"]]))
 
     # 표
-    st.subheader("📄 예측 결과 테이블")
+    st.subheader("예측 결과 테이블")
     st.dataframe(forecast_df.style.format("{:.2f}"))
 except Exception as e:
     st.error(f"예측 중 오류 발생: {e}")
