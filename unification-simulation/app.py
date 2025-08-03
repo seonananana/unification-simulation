@@ -62,9 +62,9 @@ st.header("5. 통일 시나리오 기반 물류비용 절감 예측")
 # 파일 경로 설정
 st.sidebar.subheader("🔍 경로 확인")
 data_dir = "../data"
-before_path = os.path.join(data_dir, "통일전_거리+속도.xlsx")
-after_path = os.path.join(data_dir, "통일후_경의선.xlsx")
-nk_path = os.path.join(data_dir, "북한지도_철도_지하철역_EPSG4326_EUC_KR.csv")
+before_path = "data/before_unification.xlsx"
+after_path = "data/after_unification.xlsx"
+nk_path = "data/nk_station_map.csv"
 
 st.sidebar.write("통일전 파일 존재:", os.path.exists(before_path))
 st.sidebar.write("통일후 파일 존재:", os.path.exists(after_path))
