@@ -59,51 +59,53 @@ except:
 st.header("5. 통일 시나리오 기반 물류비용 절감 예측")
 
 # 파일 경로 설정
-data_dir = "unification-simulation/data"
-before_path = f"{data_dir}/통일전_거리+속도.xlsx"
-after_path = f"{data_dir}/통일후_경의선.xlsx"
-nk_path = f"{data_dir}/북한지도_철도_지하철역_EUC_KR.csv"
+before_path = "data/통일전_거리+속도.xlsx"
+after_path = "data/통일후_경의선.xlsx"
+nk_path = "data/북한지도_철도_지하철역_EPSG4326_EUC_KR.csv"
 
 # 계산 실행
-result = run_logistics_comparison(before_path, after_path, nk_path)
-time_saved = result["통일 전 시간"] - result["통일 후 시간"]
-unit_cost = 800  # 억 원/시간 기준
-base_saving_input = time_saved * unit_cost
-
-st.sidebar.subheader(" 시나리오 선택")
-scenario = st.sidebar.selectbox("예측 시나리오", ["보수적", "기준", "공격적"])
-
-if scenario == "보수적":
-    growth_rate = 1.0
-elif scenario == "기준":
-    growth_rate = 2.0
-else:
-    growth_rate = 4.0
-
-forecast_years = st.sidebar.slider("예측 연도 수", 1, 15, 5)
-start_year = 2024
-end_year = 2024  # 기준값만 존재한다고 가정
-
-# 시계열 생성
-year_range = list(range(start_year, end_year + 1))
-savings = [base_saving_input for i in year_range]
-df = pd.DataFrame({"연도": year_range, "절감액_기준": savings}).set_index("연도")
-
-# ARIMA 예측
 try:
+    result = run_logistics_comparison(before_path, after_path, nk_path)
+    time_saved = result["통일 전 시간"] - result["통일 후 시간"]
+    unit_cost = 800  # 억 원/시간 기준
+    base_saving_input = time_saved * unit_cost
+
+    st.sidebar.subheader("📌 시나리오 선택")
+    scenario = st.sidebar.selectbox("예측 시나리오", ["보수적", "기준", "공격적"])
+
+    if scenario == "보수적":
+        growth_rate = 1.0
+    elif scenario == "기준":
+        growth_rate = 2.0
+    else:
+        growth_rate = 4.0
+
+    forecast_years = st.sidebar.slider("예측 연도 수", 1, 15, 5)
+    start_year = 2024
+    end_year = 2024
+
+    # 시계열 생성
+    year_range = list(range(start_year, end_year + 1))
+    savings = [base_saving_input for _ in year_range]
+    df = pd.DataFrame({"연도": year_range, "절감액_기준": savings}).set_index("연도")
+
+    # ARIMA 예측
     model = ARIMA(df["절감액_기준"], order=(1, 1, 1))
     model_fit = model.fit()
     forecast = model_fit.forecast(steps=forecast_years)
     forecast_years_range = list(range(end_year + 1, end_year + 1 + forecast_years))
     forecast_df = pd.DataFrame({"예측 절감액": forecast.values}, index=forecast_years_range)
 
-    # 그래프
-    st.subheader(" 예측 결과 시각화 (현실 기반 + 시나리오)")
+    # 결과 시각화
+    st.subheader("📈 예측 결과 시각화 (현실 기반 + 시나리오)")
     full_df = pd.concat([df["절감액_기준"], forecast_df["예측 절감액"]])
     st.line_chart(full_df)
 
-    # 표
-    st.subheader(" 예측 데이터 테이블")
+    st.subheader("📄 예측 데이터 테이블")
     st.dataframe(full_df.rename("절감액").to_frame().style.format("{:.2f}"))
+
+except FileNotFoundError as e:
+    st.error(f"❌ 파일을 찾을 수 없습니다: {e.filename}")
 except Exception as e:
     st.error(f"예측 중 오류 발생: {e}")
+
