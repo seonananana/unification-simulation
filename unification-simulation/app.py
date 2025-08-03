@@ -57,14 +57,14 @@ try:
 except:
     st.warning("타이머 이미지가 누락되어 있습니다.")
 #5 -----------------------------
-st.header("5. 통일 시나리오 기반 물류비용 절감 예측")
-
-# 파일 경로 설정
 st.sidebar.subheader("🔍 경로 확인")
-data_dir = "../data"
-before_path = "data/before_unification.xlsx"
-after_path = "data/after_unification.xlsx"
-nk_path = "data/nk_station_map.csv"
+
+# ✅ 경로는 모두 현재 디렉토리 기준으로 설정
+data_dir = "data"
+before_path = os.path.join(data_dir, "before_unification.xlsx")
+after_path = os.path.join(data_dir, "after_unification.xlsx")
+nk_path = os.path.join(data_dir, "nk_station_map.csv")
+
 st.sidebar.write("통일전 파일 존재:", os.path.exists(before_path))
 st.sidebar.write("통일후 파일 존재:", os.path.exists(after_path))
 st.sidebar.write("북한역 파일 존재:", os.path.exists(nk_path))
