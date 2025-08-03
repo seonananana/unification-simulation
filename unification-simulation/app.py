@@ -63,7 +63,7 @@ try:
     base_saving_input = time_saved * unit_cost
 
     # 시나리오 선택
-    st.sidebar.subheader("📌 시나리오 선택")
+    st.sidebar.subheader(" 시나리오 선택")
     scenario = st.sidebar.selectbox("예측 시나리오", ["보수적", "기준", "공격적"])
 
     growth_rate_map = {
@@ -83,11 +83,11 @@ try:
     df_forecast = pd.DataFrame({"연도": years, "절감액(억원)": savings}).set_index("연도")
 
     # 시각화
-    st.subheader("📈 예측 결과 시각화 (시나리오 반영)")
+    st.subheader(" 예측 결과 시각화 (시나리오 반영)")
     st.line_chart(df_forecast)
 
     # 예측 테이블
-    st.subheader("📄 예측 데이터 테이블")
+    st.subheader(" 예측 데이터 테이블")
     st.dataframe(df_forecast.style.format("{:.2f}"))
 
 except FileNotFoundError as e:
