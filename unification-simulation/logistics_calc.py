@@ -1,63 +1,47 @@
 import pandas as pd
 import numpy as np
-import os
+from math import radians, cos, sin, asin, sqrt
 
+# Haversine 거리 계산 함수
+def haversine(lon1, lat1, lon2, lat2):
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371  # 지구 반지름 (km)
+    return c * r
 
 def run_logistics_comparison(before_path, after_path, nk_path):
-    # 파일 로딩 함수 (인코딩 자동 감지 포함)
-    def load_excel_or_csv(path):
-        ext = os.path.splitext(path)[-1]
-        try_encodings = ["utf-8-sig", "cp949", "euc-kr"]
-        for enc in try_encodings:
-            try:
-                if ext == ".xlsx":
-                    return pd.read_excel(path)
-                elif ext == ".csv":
-                    return pd.read_csv(path, encoding=enc)
-            except Exception:
-                continue
-        raise FileNotFoundError(f"파일을 열 수 없습니다: {path}")
+    # 통일 전 데이터 로드
+    df_before = pd.read_excel(before_path)
 
-    # 1. 북한 역 위치 파일
-    nk_df = load_excel_or_csv(nk_path)
-    if not all(col in nk_df.columns for col in ["지명", "X좌표", "Y좌표"]):
-        raise ValueError("❌ 북한 파일에는 '지명', 'X좌표', 'Y좌표' 컬럼이 포함되어야 합니다.")
+    # 통일 후 데이터 로드
+    df_after = pd.read_excel(after_path)
 
-    # 북한 역 위치 딕셔너리
-    coord_dict = {
-        row["지명"]: (row["X좌표"], row["Y좌표"])
-        for _, row in nk_df.iterrows()
-    }
+    # 북한 역 위치 데이터 로드
+    try:
+        df_nk = pd.read_csv(nk_path, encoding='euc-kr')
+    except UnicodeDecodeError:
+        df_nk = pd.read_csv(nk_path, encoding='utf-8')
 
-    # 거리/속도 기반 총 소요시간 계산 함수
-    def calculate_total_time(df, label):
-        required_cols = ["출발역", "도착역", "거리(km)", "속도(km/h)"]
-        for col in required_cols:
-            if col not in df.columns:
-                raise ValueError(f"❌ '{label}' 파일에 '{col}' 컬럼이 없습니다.")
-        
-        # 문자열을 숫자로 변환 (에러 시 NaN)
-        df["거리(km)"] = pd.to_numeric(df["거리(km)"], errors="coerce")
-        df["속도(km/h)"] = pd.to_numeric(df["속도(km/h)"], errors="coerce")
+    # 필요한 컬럼 선택 및 전처리
+    df_nk = df_nk[["역명", "경도", "위도"]].dropna()
 
-        df.dropna(subset=["거리(km)", "속도(km/h)"], inplace=True)
+    # 위치 병합
+    merged = pd.merge(df_after, df_nk, left_on="도착지", right_on="역명", how="left")
+    merged = pd.merge(merged, df_nk, left_on="출발지", right_on="역명", how="left", suffixes=("_도착", "_출발"))
 
-        # 시간 계산
-        df["시간(h)"] = df["거리(km)"] / df["속도(km/h)"]
-        total_time = df["시간(h)"].sum()
+    # 좌표 누락 제거
+    merged = merged.dropna(subset=["경도_출발", "위도_출발", "경도_도착", "위도_도착"])
 
-        return round(total_time, 2)
+    # 거리 및 시간 계산
+    merged["거리"] = merged.apply(lambda row: haversine(row["경도_출발"], row["위도_출발"], row["경도_도착"], row["위도_도착"]), axis=1)
+    avg_speed_kmh = 50
+    merged["예상시간"] = merged["거리"] / avg_speed_kmh
 
-    # 2. 통일 전 데이터
-    before_df = load_excel_or_csv(before_path)
-    before_total_time = calculate_total_time(before_df, "통일 전")
+    # 총 시간 비교
+    total_time_before = df_before["총 시간(h)"].sum()
+    total_time_after = merged["예상시간"].sum()
 
-    # 3. 통일 후 데이터
-    after_df = load_excel_or_csv(after_path)
-    after_total_time = calculate_total_time(after_df, "통일 후")
-
-    return {
-        "통일 전 시간": before_total_time,
-        "통일 후 시간": after_total_time,
-        "절감 시간": round(before_total_time - after_total_time, 2)
-    }
+    return {"통일 전 시간": total_time_before, "통일 후 시간": total_time_after}
