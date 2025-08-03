@@ -14,8 +14,8 @@ def run_logistics_comparison(before_path, after_path, nk_path):
     """
     # 1. 데이터 불러오기
     df_before = pd.read_excel(before_path)
-df_after = pd.read_excel(after_path)
-df_nk = pd.read_csv(nk_path, encoding="cp949")
+    df_after = pd.read_excel(after_path)
+    df_nk = pd.read_csv(nk_path, encoding="cp949")
 
     # 2. 열 이름 표준화
     df_before = df_before.rename(columns={
