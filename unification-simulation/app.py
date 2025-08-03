@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from PIL import Image
 from statsmodels.tsa.arima.model import ARIMA
+from unification_simulation.logistics_calc import run_logistics_comparison
 
 st.set_page_config(layout="wide")
 st.title("남북통일 교통망 통합 시뮬레이션 플랫폼")
@@ -54,37 +55,55 @@ try:
         st.image(img, use_container_width=True)
 except:
     st.warning("타이머 이미지가 누락되어 있습니다.")
-# -----------------------------
+#5 -----------------------------
 st.header("5. 통일 시나리오 기반 물류비용 절감 예측")
 
-from statsmodels.tsa.arima.model import ARIMA
+# 파일 경로 설정
+data_dir = "unification-simulation/data"
+before_path = f"{data_dir}/통일전_거리+속도.xlsx"
+after_path = f"{data_dir}/통일후_경의선.xlsx"
+nk_path = f"{data_dir}/북한지도_철도_지하철역_EUC_KR.csv"
 
-st.sidebar.subheader("📌 예측 시나리오 입력")
-base_saving_input = st.sidebar.number_input("기준 절감액 (억 원)", min_value=10000, max_value=200000, value=50000, step=1000)
-growth_rate = st.sidebar.slider("연평균 물류 수요 증가율 (%)", 0.0, 10.0, 2.0)
+# 계산 실행
+result = run_logistics_comparison(before_path, after_path, nk_path)
+time_saved = result["통일 전 시간"] - result["통일 후 시간"]
+unit_cost = 800  # 억 원/시간 기준
+base_saving_input = time_saved * unit_cost
+
+st.sidebar.subheader(" 시나리오 선택")
+scenario = st.sidebar.selectbox("예측 시나리오", ["보수적", "기준", "공격적"])
+
+if scenario == "보수적":
+    growth_rate = 1.0
+elif scenario == "기준":
+    growth_rate = 2.0
+else:
+    growth_rate = 4.0
+
 forecast_years = st.sidebar.slider("예측 연도 수", 1, 15, 5)
-start_year = st.sidebar.number_input("기준 시작 연도", min_value=2000, max_value=2025, value=2010)
-end_year = st.sidebar.number_input("기준 종료 연도", min_value=2020, max_value=2030, value=2024)
+start_year = 2024
+end_year = 2024  # 기준값만 존재한다고 가정
 
 # 시계열 생성
 year_range = list(range(start_year, end_year + 1))
-savings = [base_saving_input * (1 + growth_rate / 100) ** (i - start_year) for i in year_range]
-df = pd.DataFrame({"연도": year_range, "절감액": savings}).set_index("연도")
+savings = [base_saving_input for i in year_range]
+df = pd.DataFrame({"연도": year_range, "절감액_기준": savings}).set_index("연도")
 
 # ARIMA 예측
 try:
-    model = ARIMA(df["절감액"], order=(1, 1, 1))
+    model = ARIMA(df["절감액_기준"], order=(1, 1, 1))
     model_fit = model.fit()
     forecast = model_fit.forecast(steps=forecast_years)
     forecast_years_range = list(range(end_year + 1, end_year + 1 + forecast_years))
     forecast_df = pd.DataFrame({"예측 절감액": forecast.values}, index=forecast_years_range)
 
     # 그래프
-    st.subheader("예측 결과 시각화")
-    st.line_chart(pd.concat([df["절감액"], forecast_df["예측 절감액"]]))
+    st.subheader(" 예측 결과 시각화 (현실 기반 + 시나리오)")
+    full_df = pd.concat([df["절감액_기준"], forecast_df["예측 절감액"]])
+    st.line_chart(full_df)
 
     # 표
-    st.subheader("예측 결과 테이블")
-    st.dataframe(forecast_df.style.format("{:.2f}"))
+    st.subheader(" 예측 데이터 테이블")
+    st.dataframe(full_df.rename("절감액").to_frame().style.format("{:.2f}"))
 except Exception as e:
     st.error(f"예측 중 오류 발생: {e}")
