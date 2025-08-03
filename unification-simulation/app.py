@@ -65,9 +65,6 @@ before_path = "unification-simulation/data/before_unification.xlsx"
 after_path = "unification-simulation/data/after_unification.xlsx"
 nk_path = "unification-simulation/data/nk_station_map.csv"
 
-st.sidebar.write("통일전 파일 존재:", os.path.exists(before_path))
-st.sidebar.write("통일후 파일 존재:", os.path.exists(after_path))
-st.sidebar.write("북한역 파일 존재:", os.path.exists(nk_path))
 
 # 계산 실행
 try:
@@ -76,7 +73,7 @@ try:
     unit_cost = 800  # 억 원/시간 기준
     base_saving_input = time_saved * unit_cost
 
-    st.sidebar.subheader("📌 시나리오 선택")
+    st.sidebar.subheader(" 시나리오 선택")
     scenario = st.sidebar.selectbox("예측 시나리오", ["보수적", "기준", "공격적"])
 
     if scenario == "보수적":
@@ -103,15 +100,15 @@ try:
     forecast_df = pd.DataFrame({"예측 절감액": forecast.values}, index=forecast_years_range)
 
     # 결과 시각화
-    st.subheader("📈 예측 결과 시각화 (현실 기반 + 시나리오)")
+    st.subheader(" 예측 결과 시각화 (현실 기반 + 시나리오)")
     full_df = pd.concat([df["절감액_기준"], forecast_df["예측 절감액"]])
     st.line_chart(full_df)
 
-    st.subheader("📄 예측 데이터 테이블")
+    st.subheader(" 예측 데이터 테이블")
     st.dataframe(full_df.rename("절감액").to_frame().style.format("{:.2f}"))
 
 except FileNotFoundError as e:
-    st.error(f"❌ 파일을 찾을 수 없습니다: {e.filename}")
+    st.error(f" 파일을 찾을 수 없습니다: {e.filename}")
 except Exception as e:
     st.error(f"예측 중 오류 발생: {e}")
 
