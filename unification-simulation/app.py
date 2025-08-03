@@ -33,18 +33,20 @@ except:
 # -----------------------------
 st.header("3. 통일 전후 tcr비교")
 col1, col2 = st.columns(2)
+
 try:
     with col1:
-    img = Image.open("data/mtcr.png")
-    st.image(img, caption="통일 전후 tcr 비교", use_column_width=True)
+        img = Image.open("data/mtcr.png")
+        st.image(img, caption="통일 전후 mtcr 비교", use_column_width=True)
 except:
-    st.warning("이동시간 비교 이미지가 누락되어 있습니다.")
+    st.warning("mtcr 이미지를 불러올 수 없습니다.")
+
 try:
     with col2:
-    img = Image.open("data/utcr.png")
-    st.image(img, caption="통일 전후 tcr 비교", use_column_width=True)
+        img = Image.open("data/utcr.png")
+        st.image(img, caption="통일 전후 utcr 비교", use_column_width=True)
 except:
-    st.warning("이동시간 비교 이미지가 누락되어 있습니다.")
+    st.warning("utcr 이미지를 불러올 수 없습니다.")
 
 # -----------------------------
 # SECTION 4: 
