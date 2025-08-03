@@ -1,66 +1,46 @@
-# logistics_calc.py
 import pandas as pd
 import numpy as np
+from math import radians, cos, sin, asin, sqrt
 
-def haversine(lat1, lon1, lat2, lon2):
-    R = 6371
-    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-    dlat = lat2 - lat1
+# Haversine 거리 계산 함수
+def haversine(lon1, lat1, lon2, lat2):
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
     dlon = lon2 - lon1
-    a = np.sin(dlat/2)**2 + np.cos(lat1)*np.cos(lat2)*np.sin(dlon/2)**2
-    return R * 2 * np.arcsin(np.sqrt(a))
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371  # 지구 반지름 (km)
+    return c * r
 
 def run_logistics_comparison(before_path, after_path, nk_path):
+    # 통일 전 데이터 로드
     df_before = pd.read_excel(before_path)
-    df_before['위도(y)'] = pd.to_numeric(df_before['위도(y)'], errors='coerce')
-    df_before['경도(x)'] = pd.to_numeric(df_before['경도(x)'], errors='coerce')
-    df_before['거리(km)'] = pd.to_numeric(df_before['거리(km)'], errors='coerce')
 
-    거리_list = []
-    for idx in range(len(df_before)):
-        if idx + 1 >= len(df_before):
-            거리_list.append(0)
-            continue
-        lat1, lon1 = df_before.loc[idx, ['위도(y)', '경도(x)']]
-        lat2, lon2 = df_before.loc[idx + 1, ['위도(y)', '경도(x)']]
-        if not np.isnan(lat1) and not np.isnan(lon1) and not np.isnan(lat2) and not np.isnan(lon2):
-            dist = haversine(lat1, lon1, lat2, lon2)
-        else:
-            dist = np.nan
-        거리_list.append(df_before.loc[idx, '거리(km)'] if pd.notna(df_before.loc[idx, '거리(km)']) else dist)
-    df_before['거리(km)'] = 거리_list
-    df_before['속도(km/h)'] = pd.to_numeric(df_before['속도(km/h)'], errors='coerce').fillna(34)
-    df_before['시간(h)'] = df_before['거리(km)'] / df_before['속도(km/h)']
-
+    # 통일 후 데이터 로드
     df_after = pd.read_excel(after_path)
-    df_after['속도(km/h)'] = pd.to_numeric(df_after['속도(km/h)'], errors='coerce')
-    df_after['시간(h)'] = df_after['거리(km)'] / df_after['속도(km/h)']
 
-    df_nk = pd.read_csv(nk_path, encoding='euc-kr')
-    target_nk_stations = ['판문역', '평산역', '사리원역', '구성역', '신의주역']
-    nk_filtered = df_nk[df_nk['지명'].isin(target_nk_stations)][['지명', 'Y좌표', 'X좌표']]
-    nk_filtered = nk_filtered.set_index('지명').loc[target_nk_stations].reset_index()
+    # 북한 역 위치 데이터 로드 (인코딩 예외 처리 포함)
+    try:
+        df_nk = pd.read_csv(nk_path, encoding='euc-kr')
+    except UnicodeDecodeError:
+        df_nk = pd.read_csv(nk_path, encoding='utf-8')
 
-    distances = []
-    for i in range(len(nk_filtered)-1):
-        lat1, lon1 = nk_filtered.loc[i, ['Y좌표', 'X좌표']]
-        lat2, lon2 = nk_filtered.loc[i+1, ['Y좌표', 'X좌표']]
-        distances.append(haversine(lat1, lon1, lat2, lon2))
+    # 필요한 컬럼 선택 및 전처리
+    df_nk = df_nk[["역명", "경도", "위도"]].dropna()
 
-    df_nk_dist = pd.DataFrame({
-        '출발지': target_nk_stations[:-1],
-        '도착지': target_nk_stations[1:],
-        '거리(km)': distances,
-        '속도(km/h)': 40
-    })
-    df_nk_dist['시간(h)'] = df_nk_dist['거리(km)'] / df_nk_dist['속도(km/h)']
+    # 통일 후 역 위치 보완
+    merged = pd.merge(df_after, df_nk, left_on="도착지", right_on="역명", how="left")
+    merged = pd.merge(merged, df_nk, left_on="출발지", right_on="역명", how="left", suffixes=("_도착", "_출발"))
 
-    df_after_renamed = df_after.rename(columns={'출발역': '출발지', '도착역': '도착지'})[['출발지', '도착지', '거리(km)', '속도(km/h)', '시간(h)']]
-    df_after_full = pd.concat([df_after_renamed, df_nk_dist], ignore_index=True)
+    # 거리 계산
+    merged["거리"] = merged.apply(lambda row: haversine(row["경도_출발"], row["위도_출발"], row["경도_도착"], row["위도_도착"]), axis=1)
 
-    return {
-        '통일 전 거리': df_before['거리(km)'].sum(),
-        '통일 전 시간': df_before['시간(h)'].sum(),
-        '통일 후 거리': df_after_full['거리(km)'].sum(),
-        '통일 후 시간': df_after_full['시간(h)'].sum(),
-    }
+    # 평균 속도 기반 시간 추정
+    avg_speed_kmh = 50  # 화물철도 평균 속도 (가정)
+    merged["예상시간"] = merged["거리"] / avg_speed_kmh
+
+    # 총 시간 계산
+    total_time_before = df_before["총 시간(h)"].sum()
+    total_time_after = merged["예상시간"].sum()
+
+    return {"통일 전 시간": total_time_before, "통일 후 시간": total_time_after}
