@@ -61,9 +61,9 @@ st.sidebar.subheader("🔍 경로 확인")
 
 # ✅ 경로는 모두 현재 디렉토리 기준으로 설정
 data_dir = "data"
-before_path = os.path.join(data_dir, "before_unification.xlsx")
-after_path = os.path.join(data_dir, "after_unification.xlsx")
-nk_path = os.path.join(data_dir, "nk_station_map.csv")
+before_path = "unification-simulation/data/before_unification.xlsx"
+after_path = "unification-simulation/data/after_unification.xlsx"
+nk_path = "unification-simulation/data/nk_station_map.csv"
 
 st.sidebar.write("통일전 파일 존재:", os.path.exists(before_path))
 st.sidebar.write("통일후 파일 존재:", os.path.exists(after_path))
