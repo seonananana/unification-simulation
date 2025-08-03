@@ -50,10 +50,9 @@ centered_image("timer.png", "절감 예측 타이머")
 st.header("5. 통일 시나리오 기반 물류비용 절감 예측")
 
 # 파일 경로 설정
-before_path = "data/before_unification.xlsx"
-after_path = "data/after_unification.xlsx"
-nk_path = "data/nk_station_map.csv"
-
+before_path = "unification-simulation/data/before_unification.xlsx"
+after_path = "unification-simulation/data/after_unification.xlsx"
+nk_path = "unification-simulation/data/nk_station_map.csv"
 # 경로 확인
 st.sidebar.subheader("🔍 경로 확인")
 st.sidebar.write("통일전 파일 존재:", os.path.exists(before_path))
