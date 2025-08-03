@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 from PIL import Image
 from statsmodels.tsa.arima.model import ARIMA
-from unification_simulation.logistics_calc import run_logistics_comparison
+from logistics_calc import run_logistics_comparison
 
 st.set_page_config(layout="wide")
 st.title("남북통일 교통망 통합 시뮬레이션 플랫폼")
